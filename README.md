@@ -16,6 +16,6 @@ This is a work in progress.  I am currently working with the very helpful API su
 ```
 * Data is cached under `~/.mltrading/data/`.
 * Authentication data is cached in two files:  `~/.mltrading/config/td_auth_code_config` and `~/.mltrading/config/td_auth_token_config`
-* Look at the `driver.py` file for examples of how to call some of the methods.  
+* Look in `examples` for ways this can be used.   
 * This package can be installed directly from github using the following command: `pip install git+https://github.com/lemieuxm/tdameritrade.git`
 * This has been tested with Python 3.6

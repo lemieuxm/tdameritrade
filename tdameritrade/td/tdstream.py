@@ -21,21 +21,21 @@ import tdameritrade.td.tdhelper as tdhelper
 import urllib
 import json
 import websocket
-from threading import Thread
+from threading import Thread, Timer
 import time
 import os
 
 class TDStream(object):
     streamInfo = None
     loggedIn = False
-    requestCounter = 0
+    requestCounter = 1
     isClosed = False
     
     def __init__(self):
         pass
     
     def on_message(self, ws, message):
-        print(message)
+        print("on_message: "+message)
         if True:
             self.loggedIn = True
         print("received_message")
@@ -47,30 +47,41 @@ class TDStream(object):
         print("received_message")
         
     def on_data(self, ws, data, a, b):
-        print(data)
+        print("on_data: " + data)
         print("received_data")
-    
+        pass
     
     def on_error(self, ws, error):
         print(error)
     
     
     def on_close(self, ws):
-        self.isClosed = True
-        # setTimeout(setupWebSocket, 1000);
-        print("### closed ###")
+        if not self.loggedIn:
+            self.loggedIn = True
+            t = Timer(1.0, self.start, ())
+            t.start()
+        else: 
+            self.isClosed = True
+            print("### closed ###")
     
     
     def on_open(self, ws):
         def run(*args):
-            loginMessage = self.loginMessage(self.streamInfo)
             try:
-                ws.send(loginMessage)
+                if not self.loggedIn:
+                    loginMessage = self.loginMessage(self.streamInfo)
+                    ws.send(loginMessage)
+                
+                if self.loggedIn:
+                    chartMessage = self.charthartEquityMessage(self.streamInfo)
+                    ws.send(chartMessage)
+                
                 # send the message, then wait
                 # so thread doesn't exit and socket
                 # isn't closed
                 while not self.loggedIn and not self.isClosed:
                     time.sleep(1)
+                
             except Exception as e:
                 print(str(e))
                 print(os.sys.exc_info()[0:2])
@@ -94,13 +105,13 @@ class TDStream(object):
         host = "wss://"+self.streamInfo['streamerInfo']['streamerSocketUrl']+"/ws"
         websocket.enableTrace(True)
         authValue = authData['token_type'] + ' ' + authData['access_token']
-        ws = websocket.WebSocketApp(
+        ws = websocket.WebSocketApp (
             host, on_message=self.on_message,
             on_error=self.on_error,
             on_close=self.on_close, 
             on_data=self.on_data,
-            on_cont_message=self.on_cont_message, 
-            header = ['Authorization: '+authValue]
+            header = ['Authorization: '+authValue],
+            on_cont_message=self.on_cont_message
             )
         ws.on_open = self.on_open
         try:
@@ -121,35 +132,52 @@ class TDStream(object):
 
     def loginMessage(self, streamInfo):
         credential = {
-            'acl': streamInfo['streamerInfo']['acl'],
-            'token': streamInfo['streamerInfo']['token'],
-            'appid': streamInfo['streamerInfo']['appId'],
+            # Docs say account id instead of user id ... not sure which one should be used
+            #'userid': streamInfo['primaryAccountId'],
             'userid': streamInfo['accounts'][0]['accountId'],
+            #'userid': streamInfo['userId'],
+            #'userid': streamInfo['accounts'][0]['accountId'],
+
+            'token': streamInfo['streamerInfo']['token'],
             'company': streamInfo['accounts'][0]['company'],
+
+            # Docs mention either ADVNCD or AMER, although the User Principals API reports 'ADVNCED'
             'segment': streamInfo['accounts'][0]['segment'],
+            #'segment': 'ADVNCD',
+            #'segment': 'AMER',
+
+            # Docs say account CDDomain - just trying other options
             'cddomain': streamInfo['accounts'][0]['accountCdDomainId'],
-            'timestamp': int(round(time.time() * 1000)),
+            #'cddomain': streamInfo['userCdDomainId'],
+
             'usergroup': streamInfo['streamerInfo']['userGroup'],
             'accesslevel': streamInfo['streamerInfo']['accessLevel'],
-            'authorized': 'Y'
+            'authorized': 'Y',
+
+            #There are two ACL's in the User Principals response, not sure which one to use
+            'acl': streamInfo['streamerInfo']['acl'],
+            #'acl': streamInfo['accounts'][0]['acl'],
+            'timestamp': int(round(time.time() * 1000)),
+            'appid': streamInfo['streamerInfo']['appId']
+
             }
         sendObj = {}
         sendObj['requests'] = [{
             'service': 'ADMIN',
+            'requestid': self.requestId(),
             'command': 'LOGIN',
-            'requestid': str(self.requestId()),
             'account': streamInfo['accounts'][0]['accountId'],
             'source': streamInfo['streamerInfo']['appId'],
             'parameters': {
                 'token': streamInfo['streamerInfo']['token'],
-                'credential': urllib.parse.quote(urllib.parse.urlencode(credential)),
-                'version': '1.0'
+                'version': '1.0',
+                #'credential': urllib.parse.urlencode(credential)
+                'credential': urllib.parse.quote(urllib.parse.urlencode(credential))
                 }
-            }]
-
-        jsonString = json.dumps(sendObj, indent=4, sort_keys=True) 
+            }
+        ]                
+        jsonString = json.dumps(sendObj, indent=4, sort_keys=False) 
         return jsonString
-
     
     def charthartEquityMessage(self, streamInfo):
         msg = {
