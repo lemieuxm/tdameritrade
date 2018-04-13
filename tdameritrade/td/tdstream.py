@@ -21,7 +21,7 @@ import tdameritrade.td.tdhelper as tdhelper
 import urllib
 import json
 import websocket
-from threading import Thread
+from threading import Thread, Timer
 import time
 import os
 
@@ -56,21 +56,34 @@ class TDStream(object):
     
     
     def on_close(self, ws):
-        self.isClosed = True
-        # setTimeout(setupWebSocket, 1000);
-        print("### closed ###")
+        if not self.loggedIn:
+            self.loggedIn = True
+            t = Timer(1.0, self.start, ())
+            t.start()
+        else: 
+            self.isClosed = True
+            print("### closed ###")
     
     
     def on_open(self, ws):
         def run(*args):
-            loginMessage = self.loginMessage(self.streamInfo)
             try:
-                ws.send(loginMessage)
+                if not self.loggedIn:
+                    loginMessage = self.loginMessage(self.streamInfo)
+                    ws.send(loginMessage)
                 # send the message, then wait
                 # so thread doesn't exit and socket
                 # isn't closed
+#                 while not self.loggedIn and not self.isClosed:
+#                     time.sleep(1)
+                
+                if self.loggedIn:
+                    chartMessage = self.charthartEquityMessage(self.streamInfo)
+                    ws.send(chartMessage)
+                
                 while not self.loggedIn and not self.isClosed:
                     time.sleep(1)
+                
             except Exception as e:
                 print(str(e))
                 print(os.sys.exc_info()[0:2])
@@ -99,8 +112,8 @@ class TDStream(object):
             on_error=self.on_error,
             on_close=self.on_close, 
             on_data=self.on_data,
-            on_cont_message=self.on_cont_message, 
-            header = ['Authorization: '+authValue]
+            #header = ['Authorization: '+authValue],
+            on_cont_message=self.on_cont_message
             )
         ws.on_open = self.on_open
         try:
@@ -121,16 +134,30 @@ class TDStream(object):
 
     def loginMessage(self, streamInfo):
         credential = {
+            #There are two ACL's in the User Principals response, not sure which one to use
             'acl': streamInfo['streamerInfo']['acl'],
-            'token': streamInfo['streamerInfo']['token'],
-            'appid': streamInfo['streamerInfo']['appId'],
+            #'acl': streamInfo['accounts'][0]['acl'],
+
+            #Docs say account id instead of user id ... not sure which one should be used
             'userid': streamInfo['accounts'][0]['accountId'],
+            #'userid': streamInfo['userId'],
+
             'company': streamInfo['accounts'][0]['company'],
-            'segment': streamInfo['accounts'][0]['segment'],
+
+            # Docs mention either ADVNCD or AMER, although the User Principals API reports 'ADVNCED'
+            #'segment': streamInfo['accounts'][0]['segment'],
+            'segment': 'ADVNCD',
+            #'segment': 'AMER',
+            
+            # Docs say account CDDomain - just trying other options
             'cddomain': streamInfo['accounts'][0]['accountCdDomainId'],
-            'timestamp': int(round(time.time() * 1000)),
+            #'cddomain': streamInfo['userCdDomainId'],
+
             'usergroup': streamInfo['streamerInfo']['userGroup'],
             'accesslevel': streamInfo['streamerInfo']['accessLevel'],
+            'appid': streamInfo['streamerInfo']['appId'],
+            'timestamp': int(round(time.time() * 1000)),
+            'token': streamInfo['streamerInfo']['token'],
             'authorized': 'Y'
             }
         sendObj = {}
