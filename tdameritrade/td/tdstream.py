@@ -132,10 +132,10 @@ class TDStream(object):
 
     def loginMessage(self, streamInfo):
         credential = {
-            #Docs say account id instead of user id ... not sure which one should be used
+            # Docs say account id instead of user id ... not sure which one should be used
             #'userid': streamInfo['primaryAccountId'],
-            #'userid': streamInfo['accounts'][0]['accountId'],
-            'userid': streamInfo['userId'],
+            'userid': streamInfo['accounts'][0]['accountId'],
+            #'userid': streamInfo['userId'],
             #'userid': streamInfo['accounts'][0]['accountId'],
 
             'token': streamInfo['streamerInfo']['token'],
