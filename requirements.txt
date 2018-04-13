@@ -1,0 +1,3 @@
+bottle
+websocket-client
+requests
