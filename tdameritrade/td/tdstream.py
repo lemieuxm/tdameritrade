@@ -31,7 +31,7 @@ import pytz
 class TDStream(object):
     streamInfo = None
     loggedIn = False
-    requestCounter = 1
+    requestCounter = 0
     isClosed = False
     
     def __init__(self):
