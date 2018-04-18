@@ -18,17 +18,20 @@
 """
 
 import tdameritrade.td.tdhelper as tdhelper
+import datetime as dt
+from tdameritrade import EPOCH
 import urllib
 import json
 import websocket
 from threading import Thread, Timer
 import time
 import os
+import pytz
 
 class TDStream(object):
     streamInfo = None
     loggedIn = False
-    requestCounter = 1
+    requestCounter = 0
     isClosed = False
     
     def __init__(self):
@@ -47,8 +50,7 @@ class TDStream(object):
         print("received_message")
         
     def on_data(self, ws, data, a, b):
-        print("on_data: " + data)
-        print("received_data")
+        # do nothing for now
         pass
     
     def on_error(self, ws, error):
@@ -71,6 +73,9 @@ class TDStream(object):
                 if not self.loggedIn:
                     loginMessage = self.loginMessage(self.streamInfo)
                     ws.send(loginMessage)
+
+                while not self.loggedIn and not self.isClosed:
+                    time.sleep(1)
                 
                 if self.loggedIn:
                     chartMessage = self.charthartEquityMessage(self.streamInfo)
@@ -131,48 +136,32 @@ class TDStream(object):
         pass
 
     def loginMessage(self, streamInfo):
+        timestamp = dt.datetime.strptime(streamInfo['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000").replace(tzinfo=pytz.UTC)
+        timestamp = (timestamp - EPOCH).total_seconds() * 1000
         credential = {
-            # Docs say account id instead of user id ... not sure which one should be used
-            #'userid': streamInfo['primaryAccountId'],
             'userid': streamInfo['accounts'][0]['accountId'],
-            #'userid': streamInfo['userId'],
-            #'userid': streamInfo['accounts'][0]['accountId'],
-
             'token': streamInfo['streamerInfo']['token'],
             'company': streamInfo['accounts'][0]['company'],
-
-            # Docs mention either ADVNCD or AMER, although the User Principals API reports 'ADVNCED'
             'segment': streamInfo['accounts'][0]['segment'],
-            #'segment': 'ADVNCD',
-            #'segment': 'AMER',
-
-            # Docs say account CDDomain - just trying other options
             'cddomain': streamInfo['accounts'][0]['accountCdDomainId'],
-            #'cddomain': streamInfo['userCdDomainId'],
-
             'usergroup': streamInfo['streamerInfo']['userGroup'],
             'accesslevel': streamInfo['streamerInfo']['accessLevel'],
             'authorized': 'Y',
-
-            #There are two ACL's in the User Principals response, not sure which one to use
-            'acl': streamInfo['streamerInfo']['acl'],
-            #'acl': streamInfo['accounts'][0]['acl'],
-            'timestamp': int(round(time.time() * 1000)),
-            'appid': streamInfo['streamerInfo']['appId']
-
+            'timestamp': int(timestamp),
+            'appid': streamInfo['streamerInfo']['appId'],
+            'acl': streamInfo['streamerInfo']['acl']
             }
         sendObj = {}
         sendObj['requests'] = [{
             'service': 'ADMIN',
-            'requestid': self.requestId(),
             'command': 'LOGIN',
+            'requestid': self.requestId(),
             'account': streamInfo['accounts'][0]['accountId'],
             'source': streamInfo['streamerInfo']['appId'],
             'parameters': {
+                'credential': urllib.parse.urlencode(credential),
                 'token': streamInfo['streamerInfo']['token'],
-                'version': '1.0',
-                #'credential': urllib.parse.urlencode(credential)
-                'credential': urllib.parse.quote(urllib.parse.urlencode(credential))
+                'version': '1.0'
                 }
             }
         ]                
