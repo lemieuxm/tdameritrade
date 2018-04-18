@@ -1,0 +1,155 @@
+<html>
+
+<head>
+  <script>
+    // Utility
+    function jsonToQueryString(json) {
+        return Object.keys(json).map(function(key) {
+                return encodeURIComponent(key) + '=' +
+                    encodeURIComponent(json[key]);
+            }).join('&');
+    }
+
+    function performLogin() {
+        var userPrincipalsResponse = JSON.parse(document.getElementById("userprincipals").value)
+
+        var div = document.getElementById('log');
+        div.innerHTML += "Perform Login: Starting\n"
+
+        /*FILL THIS IN - Get User Principals Response at
+        https://developer.tdameritrade.com/user-principal/apis/get/userprincipals-0
+        with streamerSubscriptionKeys,streamerConnectionInfo in
+        fields*/
+
+
+        //Converts ISO-8601 response in snapshot to ms since epoch accepted by Streamer
+        var tokenTimeStampAsDateObj = new Date(userPrincipalsResponse.streamerInfo.tokenTimestamp);
+        var tokenTimeStampAsMs = tokenTimeStampAsDateObj.getTime();
+
+        var credentials = {
+            "userid": userPrincipalsResponse.accounts[0].accountId,
+            "token": userPrincipalsResponse.streamerInfo.token,
+            "company": userPrincipalsResponse.accounts[0].company,
+            "segment": userPrincipalsResponse.accounts[0].segment,
+            "cddomain": userPrincipalsResponse.accounts[0].accountCdDomainId,
+            "usergroup": userPrincipalsResponse.streamerInfo.userGroup,
+            "accesslevel": userPrincipalsResponse.streamerInfo.accessLevel,
+            "authorized": "Y",
+            "timestamp": tokenTimeStampAsMs,
+            "appid": userPrincipalsResponse.streamerInfo.appId,
+            "acl": userPrincipalsResponse.streamerInfo.acl
+        }
+
+        var request = {
+            "requests": [
+                {
+                    "service": "ADMIN",
+                    "command": "LOGIN",
+                    "requestid": 0,
+                    "account": userPrincipalsResponse.accounts[0].accountId,
+                    "source": userPrincipalsResponse.streamerInfo.appId,
+                    "parameters": {
+                        "credential": jsonToQueryString(credentials),
+                        "token": userPrincipalsResponse.streamerInfo.token,
+                        "version": "1.0"
+                    }
+                }
+            ]
+        }
+
+        var mySock = new WebSocket("wss://" + "streamer-ws.tdameritrade.com" + "/ws"); 
+
+        mySock.onmessage = function(evt) { 
+            div.innerHTML += JSON.stringify(JSON.parse(evt.data), null, 4)
+            div.innerHTML += "\n"
+        }
+        mySock.ondata = function(evt) { 
+            div.innerHTML += JSON.stringify(JSON.parse(evt.data), null, 4)
+            div.innerHTML += "\n"
+        }
+        mySock.onclose = function() { 
+            console.log("CLOSED") 
+            div.innerHTML += "CLOSED\n"
+        }
+        mySock.onopen = function() {
+            var stringified = JSON.stringify(request, null, 4)
+            div.innerHTML += "Perform Login: "
+            div.innerHTML += stringified
+            div.innerHTML += "\n"
+            mySock.send(stringified);
+        }
+    }
+
+
+    function testQuery() {
+        var userPrincipalsResponse = JSON.parse(document.getElementById("userprincipals").value)
+
+        var div = document.getElementById('log');
+        div.innerHTML += "Test Query: Starting\n"
+
+        var mySock = new WebSocket("wss://" + "streamer-ws.tdameritrade.com" + "/ws"); 
+
+        div.innerHTML += "Test Query: Built WebSocket\n"
+
+        mySock.onmessage = function(evt) { 
+            div.innerHTML += JSON.stringify(JSON.parse(evt.data), null, 4)
+            div.innerHTML += "\n"
+        }
+        mySock.ondata = function(evt) { 
+            div.innerHTML += JSON.stringify(JSON.parse(evt.data), null, 4)
+            div.innerHTML += "\n"
+        }
+        mySock.onclose = function() { 
+            div.innerHTML += "CLOSED \n"
+        }
+        mySock.onopen = function() {
+            var stringified = JSON.stringify(request, null, 4)
+            div.innerHTML += "Test Query: \n"
+            div.innerHTML += stringified
+            div.innerHTML += "\n"
+            mySock.send(stringified);
+        }
+        
+        div.innerHTML += "Test Query: Building Request\n"
+
+        var request = {
+            "requests": [
+                {
+                    "service": "CHART_EQUITY",
+                    "requestid": "2",
+                    "command": "SUBS",
+                    "account": userPrincipalsResponse.accounts[0].accountId,
+                    "source": userPrincipalsResponse.streamerInfo.appId,
+                    "parameters": {
+                        "keys": "AAPL",
+                        "fields": "0,1,2,3,4,5,6,7,8"
+                    }
+                }
+            ]
+        }
+    }
+
+</script>
+<body>
+<!-- <form id="userprincipalsform" action="javascript:void(0);"> -->
+<textarea rows="4" cols="50" name="userprincipals" id="userprincipals">
+
+UserPrincipals
+
+</textarea>
+<!-- </form> -->
+<hr>
+
+<input id="Login" type="button" value="Login" onclick="performLogin();" />
+<input id="TestQuery" type="button" value="TestQuery" onclick="testQuery();" />
+
+<hr>
+<pre>
+<div id="log">
+Log Messages: 
+
+
+</div>
+</pre>
+</body>
+</html>

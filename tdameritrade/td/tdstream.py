@@ -50,8 +50,7 @@ class TDStream(object):
         print("received_message")
         
     def on_data(self, ws, data, a, b):
-        print("on_data: " + data)
-        print("received_data")
+        # do nothing for now
         pass
     
     def on_error(self, ws, error):
@@ -74,6 +73,9 @@ class TDStream(object):
                 if not self.loggedIn:
                     loginMessage = self.loginMessage(self.streamInfo)
                     ws.send(loginMessage)
+
+                while not self.loggedIn and not self.isClosed:
+                    time.sleep(1)
                 
                 if self.loggedIn:
                     chartMessage = self.charthartEquityMessage(self.streamInfo)
@@ -145,7 +147,7 @@ class TDStream(object):
             'usergroup': streamInfo['streamerInfo']['userGroup'],
             'accesslevel': streamInfo['streamerInfo']['accessLevel'],
             'authorized': 'Y',
-            'timestamp': timestamp,
+            'timestamp': int(timestamp),
             'appid': streamInfo['streamerInfo']['appId'],
             'acl': streamInfo['streamerInfo']['acl']
             }
