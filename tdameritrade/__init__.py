@@ -18,6 +18,8 @@
 """
 
 from pathlib import Path
+import datetime as dt
+import pytz
 
 HOME = Path.home() 
 APPDIR = '%s/.mltrading'%(HOME)
@@ -26,3 +28,5 @@ Path(CONFIGDIR).mkdir(parents=True, exist_ok=True)
 DATADIR = '%s/data'%(APPDIR)
 Path(DATADIR).mkdir(parents=True, exist_ok=True)
 DATE_FORMAT = '%Y.%m.%d'
+EPOCH = dt.datetime.utcfromtimestamp(0).replace(tzinfo=pytz.UTC)
+
