@@ -28,6 +28,9 @@ import time
 import os
 import pytz
 
+def defaultHandler(data):
+    print(data)
+
 class TDStream(object):
     streamInfo = None
     loggedIn = False
@@ -35,14 +38,21 @@ class TDStream(object):
     isClosed = False
     apiCallMessage = None
     messageHandler = None
+    debug = False
     
-    def __init__(self):
+    def __init__(self, debug=False):
+        self.debug = debug
         pass
     
     def on_message(self, ws, message):  # @UnusedVariable
         m = json.loads(message)
+        print(m)
         if m.get('notify') is not None:
-            pass
+            if len(m.get('notify')) > 0:
+                if m.get('notify')[0].get('heartbeat') is not None:
+                    pass # This is a heartbeat ... not needed to 
+                else: 
+                    print("NOTIFY: "+str(m.get('notify')))
             return
         elif m.get("response") is not None:
             if len(m.get("response")) > 0:
@@ -135,8 +145,6 @@ class TDStream(object):
             print(os.sys.exc_info()[0:2])
             print("done reporting exception") 
 
-    def defaultHandler(self, data):
-        print(data)
 
     def requestId(self):
         ret = self.requestCounter
@@ -164,7 +172,35 @@ class TDStream(object):
             jsonString = json.dumps(request, indent=4, sort_keys=True) 
             return jsonString 
         self.start(apiCallFunction)
-                
+
+    def chart_forex(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
+        self.chart_type("CHART_FOREX", symbol, dataHandler, fields)
+
+    def chart_futures(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
+        self.chart_type("CHART_FUTURES", symbol, dataHandler, fields)
+
+    def chart_type(self, service, symbol, dataHandler, fields):
+        self.messageHandler = dataHandler
+        def apiCallFunction(requestId, streamInfo):
+            request = {
+                "requests": [
+                    {
+                        "service": service,
+                        "requestid": requestId,
+                        "command": "SUBS",
+                        "account": streamInfo['accounts'][0]['accountId'],
+                        "source": streamInfo['streamerInfo']['appId'],
+                        "parameters": {
+                            "keys": symbol,
+                            "fields": fields
+                            }
+                     }
+                ]
+            }
+            jsonString = json.dumps(request, indent=4, sort_keys=True) 
+            return jsonString 
+        self.start(apiCallFunction)        
+
 
     def loginMessage(self, streamInfo):
         timestamp = dt.datetime.strptime(streamInfo['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000").replace(tzinfo=pytz.UTC)

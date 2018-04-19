@@ -54,10 +54,20 @@ def streamerInfo():
     print(json.dumps(data, indent=4, sort_keys=True))
     print("streamerInfo done")
 
-def streamData():
+def levelOne():
     tdstream = tds.TDStream()
-    tdstream.levelone_forex("EUR/USD", dataHandler=dataHandler)
+    tdstream.levelone_forex("EUR/USD", dataHandler)
     print("finished")
+
+def chartForex():
+    tdstream = tds.TDStream()
+    tdstream.chart_forex("EUR/USD")
+    print("finished")
+
+def chartFutures():
+    tdstream = tds.TDStream()
+    tdstream.chart_futures("/ES")
+    print("finished")    
 
 def dataHandler(data):
     print(data)
@@ -69,8 +79,9 @@ if __name__ == '__main__':
     #nminbyday("SPY")
     #nminbyday("SPY")
     #streamerInfo()
-    streamData()
-    #getAuth()
+    #levelOne()
+    chartForex()
+    #chartFutures()
     
 # {
 #     "EUR/USD": {
