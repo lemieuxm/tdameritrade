@@ -40,8 +40,7 @@ class TDStream(object):
     messageHandler = None
     debug = False
     
-    def __init__(self, debug=False):
-        self.debug = debug
+    def __init__(self):
         pass
     
     def on_message(self, ws, message):  # @UnusedVariable
@@ -65,8 +64,7 @@ class TDStream(object):
                     
     def on_cont_message(self, ws, message):  # @UnusedVariable
         print(message)
-        if True:
-            self.loggedIn = True
+
         
     def on_data(self, ws, data, a, b):
         # do nothing for now
@@ -134,10 +132,10 @@ class TDStream(object):
             on_error=self.on_error,
             on_close=self.on_close, 
             on_data=self.on_data,
+            on_cont_message=self.on_cont_message,
             header = ['Authorization: '+authValue],
-            on_cont_message=self.on_cont_message
             )
-        ws.on_open = self.on_open
+        ws.onOpen = self.on_open
         try:
             ws.run_forever()
         except Exception as e:
@@ -151,7 +149,7 @@ class TDStream(object):
         self.requestCounter += 1
         return(ret)
         
-    def levelone_forex(self, symbol, dataHandler, fields="0,1,2,3,4,5,6,7,8,9,10,11,12,13"):
+    def leveloneForex(self, symbol, dataHandler, fields="0,1,2,3,4,5,6,7,8,9,10,11,12,13"):
         self.messageHandler = dataHandler
         def apiCallFunction(requestId, streamInfo):
             request = {
@@ -173,13 +171,13 @@ class TDStream(object):
             return jsonString 
         self.start(apiCallFunction)
 
-    def chart_forex(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
+    def chartForex(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
         self.chart_type("CHART_FOREX", symbol, dataHandler, fields)
 
-    def chart_futures(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
+    def chartFutures(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
         self.chart_type("CHART_FUTURES", symbol, dataHandler, fields)
 
-    def chart_type(self, service, symbol, dataHandler, fields):
+    def chartType(self, service, symbol, dataHandler, fields):
         self.messageHandler = dataHandler
         def apiCallFunction(requestId, streamInfo):
             request = {
@@ -200,6 +198,55 @@ class TDStream(object):
             jsonString = json.dumps(request, indent=4, sort_keys=True) 
             return jsonString 
         self.start(apiCallFunction)        
+
+
+    def chartHistory(self, symbol, frequency, startTime, endTime, dataHandler=defaultHandler):
+        self.messageHandler = dataHandler
+        def apiCallFunction(requestId, streamInfo):
+            request = {
+                "requests": [
+                    {
+                        "service": "CHART_HISTORY_FUTURES",
+                        "requestid": requestId,
+                        "command": "GET",
+                        "account": streamInfo['accounts'][0]['accountId'],
+                        "source": streamInfo['streamerInfo']['appId'],
+                        "parameters": {
+                            "symbol": symbol,
+                            "frequency": frequency,
+                            "START_TIME": int(startTime.timestamp()*1000),
+                            "END_TIME": int(endTime.timestamp()*1000)
+                        }
+                     }
+                ]
+            }
+            jsonString = json.dumps(request, indent=4, sort_keys=True) 
+            return jsonString 
+        self.start(apiCallFunction)   
+        
+
+    def chartHistoryPeriod(self, symbol, frequency, period, dataHandler=defaultHandler):
+        self.messageHandler = dataHandler
+        def apiCallFunction(requestId, streamInfo):
+            request = {
+                "requests": [
+                    {
+                        "service": "CHART_HISTORY_FUTURES",
+                        "requestid": requestId,
+                        "command": "GET",
+                        "account": streamInfo['accounts'][0]['accountId'],
+                        "source": streamInfo['streamerInfo']['appId'],
+                        "parameters": {
+                            "symbol": symbol,
+                            "frequency": frequency,
+                            "period": period
+                        }
+                     }
+                ]
+            }
+            jsonString = json.dumps(request, indent=4, sort_keys=True) 
+            return jsonString 
+        self.start(apiCallFunction)          
 
 
     def loginMessage(self, streamInfo):
