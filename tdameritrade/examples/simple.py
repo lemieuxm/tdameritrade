@@ -69,6 +69,18 @@ def chartFutures():
     tdstream.chart_futures("/ES")
     print("finished")    
 
+def chartHistoryPeriod():
+    tdstream = tds.TDStream()
+    tdstream.chartHistoryPeriod("EUR/USD", "m15", "w1", dataHandler)
+    print("finished")    
+
+def chartHistory():
+    tdstream = tds.TDStream()
+    startTime = dt.datetime.strptime('2018-02-01', '%Y-%m-%d')
+    endTime = dt.datetime.strptime('2018-03-01', '%Y-%m-%d')
+    tdstream.chartHistory("EUR/USD", "m1", startTime, endTime, dataHandler)
+    print("finished")    
+
 def dataHandler(data):
     print(data)
 
@@ -80,8 +92,9 @@ if __name__ == '__main__':
     #nminbyday("SPY")
     #streamerInfo()
     #levelOne()
-    chartForex()
+    #chartForex()
     #chartFutures()
+    chartHistoryPeriod()
     
 # {
 #     "EUR/USD": {
