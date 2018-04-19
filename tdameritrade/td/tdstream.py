@@ -33,31 +33,39 @@ class TDStream(object):
     loggedIn = False
     requestCounter = 0
     isClosed = False
+    apiCallMessage = None
+    messageHandler = None
     
     def __init__(self):
         pass
     
-    def on_message(self, ws, message):
-        print("on_message: "+message)
-        if True:
-            self.loggedIn = True
-        print("received_message")
-        
-    def on_cont_message(self, ws, message):
+    def on_message(self, ws, message):  # @UnusedVariable
+        m = json.loads(message)
+        if m.get('notify') is not None:
+            pass
+            return
+        elif m.get("response") is not None:
+            if len(m.get("response")) > 0:
+                if m.get("response")[0].get("service") is not None and m.get("response")[0].get("command") == "LOGIN":
+                    if m.get("response")[0].get("content").get("code") == 0:
+                        self.loggedIn = True
+                        return
+        self.messageHandler(m)
+
+                    
+    def on_cont_message(self, ws, message):  # @UnusedVariable
         print(message)
         if True:
             self.loggedIn = True
-        print("received_message")
         
     def on_data(self, ws, data, a, b):
         # do nothing for now
         pass
     
-    def on_error(self, ws, error):
+    def on_error(self, ws, error):  # @UnusedVariable
         print(error)
     
-    
-    def on_close(self, ws):
+    def on_close(self, ws):  # @UnusedVariable
         if not self.loggedIn:
             self.loggedIn = True
             t = Timer(1.0, self.start, ())
@@ -68,7 +76,7 @@ class TDStream(object):
     
     
     def on_open(self, ws):
-        def run(*args):
+        def run(*args):  # @UnusedVariable
             try:
                 if not self.loggedIn:
                     loginMessage = self.loginMessage(self.streamInfo)
@@ -78,8 +86,8 @@ class TDStream(object):
                     time.sleep(1)
                 
                 if self.loggedIn:
-                    chartMessage = self.charthartEquityMessage(self.streamInfo)
-                    ws.send(chartMessage)
+                    callMessage = self.apiCallMessage(self.requestId(), self.streamInfo) 
+                    ws.send(callMessage)
                 
                 # send the message, then wait
                 # so thread doesn't exit and socket
@@ -102,11 +110,12 @@ class TDStream(object):
             print(os.sys.exc_info()[0:2])
             print("end exception")
 
-    def start(self):
+    def start(self, getRequest):
         tdh = tdhelper.TDHelper()
         am = tdhelper.AuthManager()
         authData = am.get_token()
         self.streamInfo = tdh.getStreamerInfo()
+        self.apiCallMessage = getRequest
         host = "wss://"+self.streamInfo['streamerInfo']['streamerSocketUrl']+"/ws"
         websocket.enableTrace(True)
         authValue = authData['token_type'] + ' ' + authData['access_token']
@@ -126,14 +135,36 @@ class TDStream(object):
             print(os.sys.exc_info()[0:2])
             print("done reporting exception") 
 
+    def defaultHandler(self, data):
+        print(data)
 
     def requestId(self):
         ret = self.requestCounter
         self.requestCounter += 1
         return(ret)
         
-    def chart_history(self):
-        pass
+    def levelone_forex(self, symbol, dataHandler, fields="0,1,2,3,4,5,6,7,8,9,10,11,12,13"):
+        self.messageHandler = dataHandler
+        def apiCallFunction(requestId, streamInfo):
+            request = {
+                "requests": [
+                    {
+                        "service": "LEVELONE_FOREX",
+                        "requestid": requestId,
+                        "command": "SUBS",
+                        "account": streamInfo['accounts'][0]['accountId'],
+                        "source": streamInfo['streamerInfo']['appId'],
+                        "parameters": {
+                            "keys": symbol,
+                            "fields": fields
+                            }
+                     }
+                ]
+            }
+            jsonString = json.dumps(request, indent=4, sort_keys=True) 
+            return jsonString 
+        self.start(apiCallFunction)
+                
 
     def loginMessage(self, streamInfo):
         timestamp = dt.datetime.strptime(streamInfo['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000").replace(tzinfo=pytz.UTC)
@@ -168,23 +199,3 @@ class TDStream(object):
         jsonString = json.dumps(sendObj, indent=4, sort_keys=False) 
         return jsonString
     
-    def charthartEquityMessage(self, streamInfo):
-        msg = {
-            "requests": [
-                {
-                    "service": "CHART_EQUITY",
-                    "requestid": "2",
-                    "command": "SUBS",
-                    "account": streamInfo['accounts'][0]['accountId'],
-                    "source": streamInfo['streamerInfo']['appId'],
-                    "parameters": {
-                        "keys": "AAPL",
-                        "fields": "0,1,2,3,4,5,6,7,8"
-                    }
-                }
-            ]
-        }
-           
-        jsonString = json.dumps(msg, indent=4, sort_keys=True) 
-        return jsonString 
-        

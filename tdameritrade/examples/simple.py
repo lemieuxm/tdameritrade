@@ -56,8 +56,11 @@ def streamerInfo():
 
 def streamData():
     tdstream = tds.TDStream()
-    tdstream.start()
+    tdstream.levelone_forex("EUR/USD", dataHandler=dataHandler)
     print("finished")
+
+def dataHandler(data):
+    print(data)
 
 if __name__ == '__main__':
     #nminbyday()
