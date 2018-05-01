@@ -21,8 +21,6 @@ This is a work in progress.  I am currently working with the very helpful API su
 * This has been tested with Python 3.6
 
 
-Please send questions to: mdl@mlemieux.com 
+Please send questions to: <Matthew> mdl@mlemieux.com 
 
-Sincerely, 
 
-Matthew
