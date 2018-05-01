@@ -233,6 +233,31 @@ class TDStream(object):
         self.messageHandler = callHandler
         self.start(apiCallFunction)   
         
+        
+    # see https://developer.tdameritrade.com/content/streaming-data#_Toc504640594
+    #   Need authorization
+    def news_headline(self, symbol, fields = "0,1,2,3,4", dataHandler=defaultHandler):
+        def apiCallFunction(requestId, streamInfo):
+            request = {
+                "requests": [
+                    {
+                        "service": "NEWS_HEADLINE",
+                        "requestid": requestId,
+                        "command": "SUBS",
+                        "account": streamInfo['accounts'][0]['accountId'],
+                        "source": streamInfo['streamerInfo']['appId'],
+                        "parameters": {
+                            "keys": symbol,
+                            "fields": fields
+                        }
+                    }
+                ]
+            }
+            jsonString = json.dumps(request, indent=4, sort_keys=True) 
+            return jsonString
+        self.messageHandler = dataHandler
+        self.start(apiCallFunction)  
+
 
     def loginMessage(self, streamInfo):
         timestamp = dt.datetime.strptime(streamInfo['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000").replace(tzinfo=pytz.UTC)
