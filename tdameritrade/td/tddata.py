@@ -22,7 +22,7 @@ from pathlib import Path
 import json
 from tdameritrade.td import tdhelper as tdh
 import urllib
-from tdameritrade import DATADIR, DATE_FORMAT
+from tdameritrade import DATADIR, DATE_FORMAT, UTC
 
 class TdData(object):
     '''
@@ -74,7 +74,7 @@ class TdData(object):
             candles = data['candles']
             for candle in candles:
                 candleDatetime = int(candle['datetime'])
-                candleDate = dt.datetime.fromtimestamp(candleDatetime/1000.0)
+                candleDate = dt.datetime.fromtimestamp(candleDatetime/1000.0, UTC)
                 dateString = candleDate.strftime(DATE_FORMAT)
                 if dateString not in fetchedData:
                     fetchedData[dateString] = []

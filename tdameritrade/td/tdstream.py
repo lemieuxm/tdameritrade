@@ -173,9 +173,6 @@ class TDStream(object):
             return jsonString 
         self.start(apiCallFunction)
 
-    def chart_forex(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
-        self.chart_type("CHART_FOREX", symbol, dataHandler, fields)
-
     def chart_futures(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
         self.chart_type("CHART_FUTURES", symbol, dataHandler, fields)
 
@@ -237,31 +234,6 @@ class TDStream(object):
         self.start(apiCallFunction)   
         
 
-    # not finished
-    def chartHistoryPeriod(self, symbol, frequency, period, dataHandler=defaultHandler):
-        self.messageHandler = dataHandler
-        def apiCallFunction(requestId, streamInfo):
-            request = {
-                "requests": [
-                    {
-                        "service": "CHART_HISTORY_FUTURES",
-                        "requestid": requestId,
-                        "command": "GET",
-                        "account": streamInfo['accounts'][0]['accountId'],
-                        "source": streamInfo['streamerInfo']['appId'],
-                        "parameters": {
-                            "symbol": symbol,
-                            "frequency": frequency,
-                            "period": period
-                        }
-                     }
-                ]
-            }
-            jsonString = json.dumps(request, indent=4, sort_keys=True) 
-            return jsonString 
-        self.start(apiCallFunction)          
-
-
     def loginMessage(self, streamInfo):
         timestamp = dt.datetime.strptime(streamInfo['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000").replace(tzinfo=pytz.UTC)
         timestamp = (timestamp - EPOCH).total_seconds() * 1000
@@ -295,3 +267,26 @@ class TDStream(object):
         jsonString = json.dumps(sendObj, indent=4, sort_keys=False) 
         return jsonString
     
+    
+#     def chartHistoryPeriod(self, symbol, frequency, period, dataHandler=defaultHandler):
+#         self.messageHandler = dataHandler
+#         def apiCallFunction(requestId, streamInfo):
+#             request = {
+#                 "requests": [
+#                     {
+#                         "service": "CHART_HISTORY_FUTURES",
+#                         "requestid": requestId,
+#                         "command": "GET",
+#                         "account": streamInfo['accounts'][0]['accountId'],
+#                         "source": streamInfo['streamerInfo']['appId'],
+#                         "parameters": {
+#                             "symbol": symbol,
+#                             "frequency": frequency,
+#                             "period": period
+#                         }
+#                      }
+#                 ]
+#             }
+#             jsonString = json.dumps(request, indent=4, sort_keys=True) 
+#             return jsonString 
+#         self.start(apiCallFunction)          
