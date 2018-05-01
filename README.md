@@ -19,3 +19,10 @@ This is a work in progress.  I am currently working with the very helpful API su
 * Look in `examples` for ways this can be used.   
 * This package can be installed directly from github using the following command: `pip install git+https://github.com/lemieuxm/tdameritrade.git`
 * This has been tested with Python 3.6
+
+
+Please send questions to: mdl@mlemieux.com 
+
+Sincerely, 
+
+Matthew
