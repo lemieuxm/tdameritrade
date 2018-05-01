@@ -17,11 +17,13 @@
     along with MLTDAmeritrade.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import datetime as dt
+
 import tdameritrade.td.tddata as tdd
 import tdameritrade.td.tdhelper as tdh
-import tdameritrade.td.tdstream as tds
+import datetime as dt
 import json
+import tdameritrade.td.tdstream as tds
+
 
 def nminbyday(symbol):  
     tdData = tdd.TdData()
@@ -74,15 +76,12 @@ def chartHistoryPeriod():
     tdstream.chartHistoryPeriod("EUR/USD", "m15", "w1", dataHandler)
     print("finished")    
 
-def chartHistory():
-    tdstream = tds.TDStream()
-    startTime = dt.datetime.strptime('2018-02-01', '%Y-%m-%d')
-    endTime = dt.datetime.strptime('2018-03-01', '%Y-%m-%d')
-    tdstream.chartHistory("EUR/USD", "m1", startTime, endTime, dataHandler)
-    print("finished")    
 
 def dataHandler(data):
-    print(data)
+    global i
+    print(json.dumps(data, indent=4, sort_keys=True))
+    i += 1
+        
 
 if __name__ == '__main__':
     #nminbyday()
@@ -95,14 +94,6 @@ if __name__ == '__main__':
     #chartForex()
     #chartFutures()
     chartHistoryPeriod()
+    pass
     
-# {
-#     "EUR/USD": {
-#         "assetType": "FOREX",
-#         "description": "Euro/USDollar Spot",
-#         "exchange": "GFT",
-#         "symbol": "EUR/USD"
-#     }
-# }
-
 

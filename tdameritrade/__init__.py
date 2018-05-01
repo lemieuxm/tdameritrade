@@ -28,5 +28,5 @@ Path(CONFIGDIR).mkdir(parents=True, exist_ok=True)
 DATADIR = '%s/data'%(APPDIR)
 Path(DATADIR).mkdir(parents=True, exist_ok=True)
 DATE_FORMAT = '%Y.%m.%d'
+UTC = pytz.UTC
 EPOCH = dt.datetime.utcfromtimestamp(0).replace(tzinfo=pytz.UTC)
-

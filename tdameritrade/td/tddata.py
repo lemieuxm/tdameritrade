@@ -89,9 +89,15 @@ class TdData(object):
             tmpDate += dt.timedelta(days=1)
         return(fetchedData)
     
+    
+    def toFileName(self, symbol):
+        out = symbol.replace('/', '_').replace('=', '_').replace(' ', '_').replace(':', '_')
+        return(out)
+    
     def saveDataForDate(self, symbol, date, freq, data):
-        fileName = symbol+"_"+str(freq)+"_"+str(date)+"_td"
-        fileDir = DATADIR+"/"+symbol+"/price"
+        symbolName = self.toFileName(symbol)
+        fileName = symbolName+"_"+str(freq)+"_"+self.toFileName(str(date))+"_td"
+        fileDir = DATADIR+"/"+symbolName+"/price"
         Path(fileDir).mkdir(parents=True, exist_ok=True)
         fullFileName = fileDir+"/"+fileName
         pathObject = Path(fileDir)
@@ -102,8 +108,9 @@ class TdData(object):
         return False
         
     def loadDataForDate(self, symbol, date, freq):
-        fileName = symbol+"_"+str(freq)+"_"+str(date)+"_td"
-        fileDir = DATADIR+"/"+symbol+"/price"
+        symbolName = self.toFileName(symbol)
+        fileName = symbolName+"_"+str(freq)+"_"+self.toFileName(str(date))+"_td"
+        fileDir = DATADIR+"/"+symbolName+"/price"
         fullFileName = fileDir+"/"+fileName
         pathObject = Path(fullFileName)
         data = None
@@ -112,3 +119,29 @@ class TdData(object):
                 data = json.load(fileObject)
         return data
         
+
+    def saveDataForDateRange(self, symbol, startDate, endDate, freq, data):
+        symbolName = self.toFileName(symbol)
+        fileName = symbolName+"_"+str(freq)+"_"+self.toFileName(str(startDate))+"_to_"+self.toFileName(str(endDate))+"_td"
+        fileDir = DATADIR+"/"+symbolName+"/price"
+        Path(fileDir).mkdir(parents=True, exist_ok=True)
+        fullFileName = fileDir+"/"+fileName
+        pathObject = Path(fileDir)
+        if pathObject.exists():
+            with open(fullFileName, 'w') as fileObject:
+                json.dump(data, fileObject, sort_keys=True, indent=4, separators=(',', ': '))
+                return True
+        return False
+        
+    def loadDataForDateRange(self, symbol, startDate, endDate, freq):
+        symbolName = self.toFileName(symbol)
+        fileName = symbolName+"_"+str(freq)+"_"+self.toFileName(str(startDate))+"_to_"+self.toFileName(str(endDate))+"_td"
+        fileDir = DATADIR+"/"+symbolName+"/price"
+        fullFileName = fileDir+"/"+fileName
+        pathObject = Path(fullFileName)
+        data = None
+        if pathObject.exists():
+            with open(fullFileName, 'r') as fileObject:
+                data = json.load(fileObject)
+        return data
+

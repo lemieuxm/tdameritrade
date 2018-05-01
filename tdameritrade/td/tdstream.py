@@ -18,6 +18,7 @@
 """
 
 import tdameritrade.td.tdhelper as tdhelper
+import tdameritrade.td.tddata as tddata
 import datetime as dt
 from tdameritrade import EPOCH
 import urllib
@@ -46,7 +47,6 @@ class TDStream(object):
     
     def on_message(self, ws, message):  # @UnusedVariable
         m = json.loads(message)
-        print(m)
         if m.get('notify') is not None:
             if len(m.get('notify')) > 0:
                 if m.get('notify')[0].get('heartbeat') is not None:
@@ -64,7 +64,7 @@ class TDStream(object):
 
                     
     def on_cont_message(self, ws, message):  # @UnusedVariable
-        print(message)
+        #print(message)
         if True:
             self.loggedIn = True
         
@@ -203,7 +203,13 @@ class TDStream(object):
 
 
     def chartHistory(self, symbol, frequency, startTime, endTime, dataHandler=defaultHandler):
-        self.messageHandler = dataHandler
+        tdData = tddata.TdData()
+        data = tdData.loadDataForDateRange(symbol, startTime, endTime, frequency)
+        startMillis = int(startTime.timestamp()*1000.0)
+        endMillis = int(endTime.timestamp()*1000.0)
+        if data is not None:
+            dataHandler(data)
+            return
         def apiCallFunction(requestId, streamInfo):
             request = {
                 "requests": [
@@ -216,17 +222,22 @@ class TDStream(object):
                         "parameters": {
                             "symbol": symbol,
                             "frequency": frequency,
-                            "START_TIME": int(startTime.timestamp()*1000),
-                            "END_TIME": int(endTime.timestamp()*1000)
+                            "START_TIME": startMillis,
+                            "END_TIME": endMillis
                         }
                      }
                 ]
             }
             jsonString = json.dumps(request, indent=4, sort_keys=True) 
-            return jsonString 
+            return jsonString
+        def callHandler(data):
+            tdData.saveDataForDateRange(symbol, startTime, endTime, frequency, data)
+            dataHandler(data)
+        self.messageHandler = callHandler
         self.start(apiCallFunction)   
         
 
+    # not finished
     def chartHistoryPeriod(self, symbol, frequency, period, dataHandler=defaultHandler):
         self.messageHandler = dataHandler
         def apiCallFunction(requestId, streamInfo):
