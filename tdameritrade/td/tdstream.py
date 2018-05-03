@@ -33,19 +33,24 @@ def defaultHandler(data):
     print(data)
 
 class TDStream(object):
-    streamInfo = None
     loggedIn = False
     requestCounter = 0
     isClosed = False
-    apiCallMessage = None
-    messageHandler = None
     debug = False
+    tdh = None
+    userInfo = None
     
     def __init__(self, debug=False):
         self.debug = debug
-        pass
+        self.tdh = tdhelper.TDHelper()
+        self.userInfo = self.tdh.getStreamerInfo()
     
-    def on_message(self, ws, message):  # @UnusedVariable
+    def on_message_wrapper(self, messageHandler):
+        def on_message(ws, message):
+            self.on_message_internal(ws, message, messageHandler)
+        return(on_message)
+    
+    def on_message_internal(self, ws, message, messageHandler):  # @UnusedVariable
         m = json.loads(message)
         if m.get('notify') is not None:
             if len(m.get('notify')) > 0:
@@ -60,7 +65,7 @@ class TDStream(object):
                     if m.get("response")[0].get("content").get("code") == 0:
                         self.loggedIn = True
                         return
-        self.messageHandler(m)
+        messageHandler(m)
 
                     
     def on_cont_message(self, ws, message):  # @UnusedVariable
@@ -85,18 +90,29 @@ class TDStream(object):
             print("### closed ###")
     
     
-    def on_open(self, ws):
+    def on_open_wrapper(self, messages):
+        def on_open(ws):
+            self.on_open_internal(ws, messages)
+        return(on_open)
+    
+    def on_open_internal(self, ws, messages):
         def run(*args):  # @UnusedVariable
             try:
                 if not self.loggedIn:
-                    loginMessage = self.loginMessage(self.streamInfo)
+                    loginMessage = self.loginMessage(self.userInfo)
                     ws.send(loginMessage)
 
                 while not self.loggedIn and not self.isClosed:
                     time.sleep(1)
                 
                 if self.loggedIn:
-                    callMessage = self.apiCallMessage(self.requestId(), self.streamInfo) 
+                    requests = []
+                    for message in messages:
+                        baseRequest = self.baseRequest(self.requestId())
+                        message.update(baseRequest)
+                        requests.append(message)
+                    
+                    callMessage = json.dumps({'requests': requests}, indent=4, sort_keys=True) 
                     ws.send(callMessage)
                 
                 # send the message, then wait
@@ -120,24 +136,22 @@ class TDStream(object):
             print(os.sys.exc_info()[0:2])
             print("end exception")
 
-    def start(self, getRequest):
-        tdh = tdhelper.TDHelper()
+
+    def start(self, messages, messageHandler):
         am = tdhelper.AuthManager()
         authData = am.get_token()
-        self.streamInfo = tdh.getStreamerInfo()
-        self.apiCallMessage = getRequest
-        host = "wss://"+self.streamInfo['streamerInfo']['streamerSocketUrl']+"/ws"
+        host = "wss://"+self.userInfo['streamerInfo']['streamerSocketUrl']+"/ws"
         websocket.enableTrace(True)
         authValue = authData['token_type'] + ' ' + authData['access_token']
         ws = websocket.WebSocketApp (
-            host, on_message=self.on_message,
+            host, on_message=self.on_message_wrapper(messageHandler),
             on_error=self.on_error,
             on_close=self.on_close, 
             on_data=self.on_data,
             header = ['Authorization: '+authValue],
             on_cont_message=self.on_cont_message
             )
-        ws.on_open = self.on_open
+        ws.on_open = self.on_open_wrapper(messages)
         try:
             ws.run_forever()
         except Exception as e:
@@ -145,146 +159,116 @@ class TDStream(object):
             print(os.sys.exc_info()[0:2])
             print("done reporting exception") 
 
-
     def requestId(self):
         ret = self.requestCounter
         self.requestCounter += 1
         return(ret)
         
+    def baseRequest(self, requestId):
+        request = {
+                "requestid": requestId,
+                "account": self.userInfo['accounts'][0]['accountId'],
+                "source": self.userInfo['streamerInfo']['appId']
+                }
+        return(request)
+        
     def levelone_forex(self, symbol, dataHandler, fields="0,1,2,3,4,5,6,7,8,9,10,11,12,13"):
-        self.messageHandler = dataHandler
-        def apiCallFunction(requestId, streamInfo):
-            request = {
-                "requests": [
-                    {
-                        "service": "LEVELONE_FOREX",
-                        "requestid": requestId,
-                        "command": "SUBS",
-                        "account": streamInfo['accounts'][0]['accountId'],
-                        "source": streamInfo['streamerInfo']['appId'],
-                        "parameters": {
-                            "keys": symbol,
-                            "fields": fields
-                            }
-                     }
-                ]
+        messages = [self.levelone_forex_msg(symbol, fields)]
+        self.start(messages, dataHandler)
+
+    def levelone_forex_msg(self, symbol, fields="0,1,2,3,4,5,6,7,8,9,10,11,12,13"):
+        message = {
+            "service": "LEVELONE_FOREX",
+            "command": "SUBS",
+            "parameters": {
+                "keys": symbol,
+                "fields": fields
+                }
             }
-            jsonString = json.dumps(request, indent=4, sort_keys=True) 
-            return jsonString 
-        self.start(apiCallFunction)
+        return(message)
 
     def chart_futures(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
         self.chart_type("CHART_FUTURES", symbol, dataHandler, fields)
 
     def chart_type(self, service, symbol, dataHandler, fields):
-        self.messageHandler = dataHandler
-        def apiCallFunction(requestId, streamInfo):
-            request = {
-                "requests": [
-                    {
-                        "service": service,
-                        "requestid": requestId,
-                        "command": "SUBS",
-                        "account": streamInfo['accounts'][0]['accountId'],
-                        "source": streamInfo['streamerInfo']['appId'],
-                        "parameters": {
-                            "keys": symbol,
-                            "fields": fields
-                            }
-                     }
-                ]
+        self.start([self.chart_type_msg(service, symbol, fields)], dataHandler)        
+
+    def chart_type_msg(self, service, symbol, fields):
+        message = {
+            "service": service,
+            "command": "SUBS",
+            "parameters": {
+                "keys": symbol,
+                "fields": fields
             }
-            jsonString = json.dumps(request, indent=4, sort_keys=True) 
-            return jsonString 
-        self.start(apiCallFunction)        
+        }
+        return(message)
 
 
     def chartHistory(self, symbol, frequency, startTime, endTime, dataHandler=defaultHandler):
         tdData = tddata.TdData()
         data = tdData.loadDataForDateRange(symbol, startTime, endTime, frequency)
-        startMillis = int(startTime.timestamp()*1000.0)
-        endMillis = int(endTime.timestamp()*1000.0)
         if data is not None:
             dataHandler(data)
             return
-        def apiCallFunction(requestId, streamInfo):
-            request = {
-                "requests": [
-                    {
-                        "service": "CHART_HISTORY_FUTURES",
-                        "requestid": requestId,
-                        "command": "GET",
-                        "account": streamInfo['accounts'][0]['accountId'],
-                        "source": streamInfo['streamerInfo']['appId'],
-                        "parameters": {
-                            "symbol": symbol,
-                            "frequency": frequency,
-                            "START_TIME": startMillis,
-                            "END_TIME": endMillis
-                        }
-                     }
-                ]
-            }
-            jsonString = json.dumps(request, indent=4, sort_keys=True) 
-            return jsonString
         def callHandler(data):
             tdData.saveDataForDateRange(symbol, startTime, endTime, frequency, data)
             dataHandler(data)
-        self.messageHandler = callHandler
-        self.start(apiCallFunction)   
+        self.start([self.chart_history_msg(symbol, frequency, startTime, endTime)], callHandler)   
         
+    def chart_history_msg(self, symbol, frequency, startTime, endTime):
+        startMillis = int(startTime.timestamp()*1000.0)
+        endMillis = int(endTime.timestamp()*1000.0)  
+        message = {
+            "service": "CHART_HISTORY_FUTURES",
+            "command": "GET",
+            "parameters": {
+                "symbol": symbol,
+                "frequency": frequency,
+                "START_TIME": startMillis,
+                "END_TIME": endMillis
+            }
+        }
+        return(message)
         
     # see https://developer.tdameritrade.com/content/streaming-data#_Toc504640594
     #   Need authorization
     def news_headline(self, symbol, fields = "0,1,2,3,4", dataHandler=defaultHandler):
-        def apiCallFunction(requestId, streamInfo):
-            request = {
-                "requests": [
-                    {
-                        "service": "NEWS_HEADLINE",
-                        "requestid": requestId,
-                        "command": "SUBS",
-                        "account": streamInfo['accounts'][0]['accountId'],
-                        "source": streamInfo['streamerInfo']['appId'],
-                        "parameters": {
-                            "keys": symbol,
-                            "fields": fields
-                        }
-                    }
-                ]
+        self.start([self.news_headline_msg(symbol, fields)], dataHandler)  
+
+    def news_headline_msg(self, symbol, fields):
+        message = { "service": "NEWS_HEADLINE","command": "SUBS",
+            "parameters": {"keys": symbol,"fields": fields }
             }
-            jsonString = json.dumps(request, indent=4, sort_keys=True) 
-            return jsonString
-        self.messageHandler = dataHandler
-        self.start(apiCallFunction)  
+        return(message)
 
 
-    def loginMessage(self, streamInfo):
-        timestamp = dt.datetime.strptime(streamInfo['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000").replace(tzinfo=pytz.UTC)
+    def loginMessage(self, userInfo):
+        timestamp = dt.datetime.strptime(userInfo['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000").replace(tzinfo=pytz.UTC)
         timestamp = (timestamp - EPOCH).total_seconds() * 1000
         credential = {
-            'userid': streamInfo['accounts'][0]['accountId'],
-            'token': streamInfo['streamerInfo']['token'],
-            'company': streamInfo['accounts'][0]['company'],
-            'segment': streamInfo['accounts'][0]['segment'],
-            'cddomain': streamInfo['accounts'][0]['accountCdDomainId'],
-            'usergroup': streamInfo['streamerInfo']['userGroup'],
-            'accesslevel': streamInfo['streamerInfo']['accessLevel'],
+            'userid': userInfo['accounts'][0]['accountId'],
+            'token': userInfo['streamerInfo']['token'],
+            'company': userInfo['accounts'][0]['company'],
+            'segment': userInfo['accounts'][0]['segment'],
+            'cddomain': userInfo['accounts'][0]['accountCdDomainId'],
+            'usergroup': userInfo['streamerInfo']['userGroup'],
+            'accesslevel': userInfo['streamerInfo']['accessLevel'],
             'authorized': 'Y',
             'timestamp': int(timestamp),
-            'appid': streamInfo['streamerInfo']['appId'],
-            'acl': streamInfo['streamerInfo']['acl']
+            'appid': userInfo['streamerInfo']['appId'],
+            'acl': userInfo['streamerInfo']['acl']
             }
         sendObj = {}
         sendObj['requests'] = [{
             'service': 'ADMIN',
             'command': 'LOGIN',
             'requestid': self.requestId(),
-            'account': streamInfo['accounts'][0]['accountId'],
-            'source': streamInfo['streamerInfo']['appId'],
+            'account': userInfo['accounts'][0]['accountId'],
+            'source': userInfo['streamerInfo']['appId'],
             'parameters': {
                 'credential': urllib.parse.urlencode(credential),
-                'token': streamInfo['streamerInfo']['token'],
+                'token': userInfo['streamerInfo']['token'],
                 'version': '1.0'
                 }
             }
@@ -295,15 +279,15 @@ class TDStream(object):
     
 #     def chartHistoryPeriod(self, symbol, frequency, period, dataHandler=defaultHandler):
 #         self.messageHandler = dataHandler
-#         def apiCallFunction(requestId, streamInfo):
+#         def apiCallFunction(requestId, userInfo):
 #             request = {
 #                 "requests": [
 #                     {
 #                         "service": "CHART_HISTORY_FUTURES",
 #                         "requestid": requestId,
 #                         "command": "GET",
-#                         "account": streamInfo['accounts'][0]['accountId'],
-#                         "source": streamInfo['streamerInfo']['appId'],
+#                         "account": userInfo['accounts'][0]['accountId'],
+#                         "source": userInfo['streamerInfo']['appId'],
 #                         "parameters": {
 #                             "symbol": symbol,
 #                             "frequency": frequency,

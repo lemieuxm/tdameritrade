@@ -1,0 +1,6 @@
+{
+	"oauthid": "{app_name}@AMER.OAUTHAP",
+	"redirect_host": "localhost",
+	"redirect_port": 39948
+}
+
