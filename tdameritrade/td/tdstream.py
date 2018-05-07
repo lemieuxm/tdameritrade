@@ -141,7 +141,7 @@ class TDStream(object):
         am = tdhelper.AuthManager()
         authData = am.get_token()
         host = "wss://"+self.userInfo['streamerInfo']['streamerSocketUrl']+"/ws"
-        websocket.enableTrace(True)
+        websocket.enableTrace(False)
         authValue = authData['token_type'] + ' ' + authData['access_token']
         ws = websocket.WebSocketApp (
             host, on_message=self.on_message_wrapper(messageHandler),
@@ -233,15 +233,40 @@ class TDStream(object):
         
     # see https://developer.tdameritrade.com/content/streaming-data#_Toc504640594
     #   Need authorization
-    def news_headline(self, symbol, fields = "0,1,2,3,4", dataHandler=defaultHandler):
-        self.start([self.news_headline_msg(symbol, fields)], dataHandler)  
+    def news_headline(self, symbols, fields = "0,1,2,3,4,5,6,7,8,9,10", dataHandler=defaultHandler):
+        self.start([self.news_headline_msg(symbols, fields)], dataHandler)  
 
-    def news_headline_msg(self, symbol, fields):
+    def news_headline_msg(self, symbols, fields = "0,1,2,3,4,5,6,7,8,9,10"):
         message = { "service": "NEWS_HEADLINE","command": "SUBS",
-            "parameters": {"keys": symbol,"fields": fields }
+            "parameters": {"keys": ','.join(symbols),"fields": fields }
             }
         return(message)
-
+    
+    def news_headlinelist(self, symbols, fields = "0,1,2,3,4,5,6,7,8,9,10", dataHandler=defaultHandler):
+        self.start([self.news_headline_msg(symbols, fields)], dataHandler)  
+    
+    def news_headlinelist_msg(self, symbols, fields = "0,1,2,3,4,5,6,7,8,9,10"):
+        message = { "service": "NEWS_HEADLINELIST","command": "GET",
+            "parameters": {"keys": ','.join(symbols),"fields": fields }
+            }
+        return(message)
+    
+    def news_story(self, story_id, fields = "0,1,2,3,4,5,6,7,8,9,10", dataHandler=defaultHandler):
+        self.start([self.news_story_msg(story_id, fields)], dataHandler)  
+    
+    def news_story_msg(self, symbols, fields = "0,1,2,3,4,5,6,7,8,9,10"):
+        message = { "service": "NEWS_STORY","command": "GET",
+            "parameters": {'keys': ','.join(symbols),"fields": fields }
+            }
+        return(message)
+    
+    # Frequency: m1, m5, m10, m30, h1, d1, w1, n1
+    # Period: d5, w4, n10, y1, y10
+    def chart_history_period_msg(self, symbol, frequency, period):
+        message =  {"service": "CHART_HISTORY_FUTURES", "command": "GET",
+           "parameters": {"symbol": symbol,"frequency": frequency,"period": period}
+        }
+        return(message)
 
     def loginMessage(self, userInfo):
         timestamp = dt.datetime.strptime(userInfo['streamerInfo']['tokenTimestamp'], "%Y-%m-%dT%H:%M:%S+0000").replace(tzinfo=pytz.UTC)
@@ -276,26 +301,4 @@ class TDStream(object):
         jsonString = json.dumps(sendObj, indent=4, sort_keys=False) 
         return jsonString
     
-    
-#     def chartHistoryPeriod(self, symbol, frequency, period, dataHandler=defaultHandler):
-#         self.messageHandler = dataHandler
-#         def apiCallFunction(requestId, userInfo):
-#             request = {
-#                 "requests": [
-#                     {
-#                         "service": "CHART_HISTORY_FUTURES",
-#                         "requestid": requestId,
-#                         "command": "GET",
-#                         "account": userInfo['accounts'][0]['accountId'],
-#                         "source": userInfo['streamerInfo']['appId'],
-#                         "parameters": {
-#                             "symbol": symbol,
-#                             "frequency": frequency,
-#                             "period": period
-#                         }
-#                      }
-#                 ]
-#             }
-#             jsonString = json.dumps(request, indent=4, sort_keys=True) 
-#             return jsonString 
-#         self.start(apiCallFunction)          
+

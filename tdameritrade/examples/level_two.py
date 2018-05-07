@@ -17,14 +17,18 @@
     along with MLTDAmeritrade.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+
 import tdameritrade.td.tdstream as tds
 import json
 
-def newsHeadline():
+def main():
+    def dataHandler(data):
+        print(json.dumps(data, indent=4, sort_keys=True))
     tdstream = tds.TDStream()
-    data = tdstream.news_headline("SPY", fields="0,1,2,3,4,5,6,7,8,9,10")
-    print(json.dumps(data, indent=4, sort_keys=True))
-
+    tdstream.leveltwo_futures("EUR/USD", dataHandler)
+    print("finished")
+    
+    
 if __name__ == '__main__':
-    newsHeadline()
+    main()
     

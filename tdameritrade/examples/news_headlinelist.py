@@ -20,11 +20,15 @@
 import tdameritrade.td.tdstream as tds
 import json
 
-def newsHeadline():
+def main():
     tdstream = tds.TDStream()
-    data = tdstream.news_headline("SPY", fields="0,1,2,3,4,5,6,7,8,9,10")
+    data = tdstream.news_headlinelist(['EUR/USD','TSLA','AAPL'], fields="0,1,2,3,4,5,6,7,8,9,10", dataHandler=dataHandler)
     print(json.dumps(data, indent=4, sort_keys=True))
 
+def dataHandler(data):
+    print(data)
+    pass
+
 if __name__ == '__main__':
-    newsHeadline()
+    main()
     
