@@ -39,6 +39,7 @@ class TDStream(object):
     debug = False
     tdh = None
     userInfo = None
+    start_time = None
     
     def __init__(self, debug=False):
         self.debug = debug
@@ -51,10 +52,13 @@ class TDStream(object):
         return(on_message)
     
     def on_message_internal(self, ws, message, messageHandler):  # @UnusedVariable
+        #print("Start time to response time: %f"%(dt.datetime.utcnow() - self.start_time).total_seconds())
         m = json.loads(message)
         if m.get('notify') is not None:
             if len(m.get('notify')) > 0:
                 if m.get('notify')[0].get('heartbeat') is not None:
+                    #n = round(time.time()*1000)
+                    #print("%i-%s"%(n, m.get('notify')[0].get('heartbeat'))) 
                     pass # This is a heartbeat ... not needed to 
                 else: 
                     print("NOTIFY: "+str(m.get('notify')))
@@ -153,6 +157,7 @@ class TDStream(object):
             )
         ws.on_open = self.on_open_wrapper(messages)
         try:
+            #self.start_time = dt.datetime.utcnow()
             ws.run_forever()
         except Exception as e:
             print(e)
@@ -189,6 +194,9 @@ class TDStream(object):
 
     def chart_futures(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
         self.chart_type("CHART_FUTURES", symbol, dataHandler, fields)
+
+    def chart_futures_msg(self, symbol, fields="0,1,2,3,4,5,6,7,8"):
+        return(self.chart_type_msg("CHART_FUTURES", symbol, fields))
 
     def chart_type(self, service, symbol, dataHandler, fields):
         self.start([self.chart_type_msg(service, symbol, fields)], dataHandler)        
@@ -246,7 +254,7 @@ class TDStream(object):
         self.start([self.news_headline_msg(symbols, fields)], dataHandler)  
     
     def news_headlinelist_msg(self, symbols, fields = "0,1,2,3,4,5,6,7,8,9,10"):
-        message = { "service": "NEWS_HEADLINELIST","command": "GET",
+        message = { "service": "NEWS_HEADLINE_LIST","command": "GET",
             "parameters": {"keys": ','.join(symbols),"fields": fields }
             }
         return(message)
