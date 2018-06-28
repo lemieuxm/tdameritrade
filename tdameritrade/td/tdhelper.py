@@ -156,17 +156,12 @@ class TDHelper():
         jsondict = json.loads(jsontext)
         return jsondict
     
-    def dogetold(self, url, headers, reqvars):
-        encurl = url + "?" + urllib.parse.urlencode(reqvars)
-        reply = requests.get(encurl, headers)
-        jsontext = reply.text.encode(encoding='utf-8')
-        jsondict = json.loads(jsontext)
-        return jsondict
-    
     def doget(self, url, headers={}, reqvars={}):
         authManager = AuthManager()
         authdata = authManager.get_token()
-        encurl = url + "?" + urllib.parse.urlencode(reqvars)
+        dvars = {'apikey': authManager.config['oauthid']}
+        dvars.update(reqvars)
+        encurl = url + "?" + urllib.parse.urlencode(dvars)
         q = Request(encurl)
         for key, value in headers.items():
             q.add_header(key, value)
@@ -177,6 +172,27 @@ class TDHelper():
         jsondict = json.loads(jsontext)
         return jsondict
 
+    def dodelete(self, url, headers={}, reqvars={}):
+        return(self.dorequest(url, headers, reqvars, "DELETE"))
+    
+    def doput(self, url, headers={}, reqvars={}):
+        return(self.dorequest(url, headers, reqvars, "PUT"))
+    
+    def dorequest(self, url, headers={}, reqvars={}, method="GET"):
+        authManager = AuthManager()
+        authdata = authManager.get_token()
+        dvars = {'apikey': authManager.config['oauthid']}
+        dvars.update(reqvars)
+        encurl = url + "?" + urllib.parse.urlencode(dvars)
+        authHeader = authdata['token_type'] + ' ' + authdata['access_token']
+        myheaders = {"Authorization": authHeader}
+        myheaders.update(headers)
+        q = Request(encurl, method=method, headers=myheaders)
+        uo = urlopen(q)
+        jsontext = uo.read()
+        jsondict = json.loads(jsontext)
+        return jsondict       
+    
     def getAccounts(self):
         url = "https://api.tdameritrade.com/v1/accounts"
         reqvars = {'fields': 'positions'}

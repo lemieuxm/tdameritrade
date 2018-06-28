@@ -89,7 +89,6 @@ class TdData(object):
             tmpDate += dt.timedelta(days=1)
         return(fetchedData)
     
-    
     def toFileName(self, symbol):
         out = symbol.replace('/', '_').replace('=', '_').replace(' ', '_').replace(':', '_')
         return(out)

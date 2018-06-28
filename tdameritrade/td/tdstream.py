@@ -192,7 +192,10 @@ class TDStream(object):
             }
         return(message)
 
-    def chart_futures(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6,7,8"):
+    def chart_forex_msg(self, symbol, fields="1,2,3,4,5,6"):
+        return(self.chart_type_msg("CHART_EQUITY", symbol, fields))
+
+    def chart_futures(self, symbol, dataHandler=defaultHandler, fields="0,1,2,3,4,5,6"):
         self.chart_type("CHART_FUTURES", symbol, dataHandler, fields)
 
     def chart_futures_msg(self, symbol, fields="0,1,2,3,4,5,6,7,8"):

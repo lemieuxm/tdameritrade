@@ -8,7 +8,7 @@ import datetime as dt
 import math
 
 
-def level_one_to_ml(message):
+def level_one_to_ml(message, pa=None):
     messages = []
     for q in message['content']:
         a = {}
@@ -48,7 +48,9 @@ def level_one_to_ml(message):
             a['insert_ts'] = dt.datetime.utcnow().timestamp()*1000
             messages.append(a)
         else:
-            print('This should not happen: '+str(a))
+            #print('This should not happen: '+str(a))
+            # This is actually normal ... it means nothing changed, and we can continue on our way with the current values
+            pass
     return(messages)
 
 def setif(a, name, q, num, default=None):
@@ -77,6 +79,19 @@ def chart_history_to_ml(message):
         a['candles'] = aa
         messages.append(a)
     return(messages) 
+             
+def chart_futures_to_ml(message):
+    messages = []
+    for q in message['content']:
+        a = {'symbol': q['key'], 'source': 'td'}
+        a['quote_time_raw'] = q['1']
+        a['open'] = q['2']
+        a['high'] = q['3']
+        a['low'] = q['4']
+        a['close'] = q['5']
+        a['volume'] = q['6']
+        messages.append(a)
+    return(messages)
              
 def headline_to_ml(message):
     messages = []
