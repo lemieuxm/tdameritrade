@@ -30,7 +30,7 @@ reqs = parse_requirements('./requirements.txt', session=False)
 install_requires = [str(ir.req) for ir in reqs]
 
 setup(name='tdameritrade',
-      version='0.1',
+      version='0.1.1',
       description='Matthew''s TD Ameritrade API Python Library',
       url='',
       author='Matthew LeMieux',

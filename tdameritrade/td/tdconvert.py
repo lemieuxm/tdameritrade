@@ -116,9 +116,8 @@ def headline_to_ml(message):
 
 def headlinelist_to_ml(message):
     messages =[]
-    for q in message['content']:
-        a = {}
-        
+    for q in message['content']:  # @UnusedVariable
+        pass
         
     return(messages)
 
