@@ -19,6 +19,9 @@ This is a work in progress.  I am currently working with the very helpful API su
 * Look in `examples` for ways this can be used.   
 * This package can be installed directly from github using the following command: `pip install git+https://github.com/lemieuxm/tdameritrade.git`
 * This has been tested with Python 3.6
+* Currently, the TD Ameritrade servers are allow a maximum of ONE connection per user to the streaming API.  I've made the request to the API dev team to increase (I suggested 5).  It is difficult as I have one constantly running stream to collect data for back testing, and want to create another for development, and when all is said and done, I will also have one actively trading.  
+* FOREX data was and is my motivation for starting this.  Development on this library is slow mostly due to the fact that FOREX data access isn't working quite right on TD Ameritrades servers.  I'm working with the API team to resolve it.
+* I am currently developing a private library that uses this library and does backtesting, trading, and data analysis.  As that matures, I may move some of those tools into this tool, if those things are desired (or move parts of the private library into a publicly available library).  I'm currently not planning to make my personal trading algorithm and methodology public, so parts of the private library will also remain private.  
 
 
 Please send questions to: (Matthew) mdl@mlemieux.com 
