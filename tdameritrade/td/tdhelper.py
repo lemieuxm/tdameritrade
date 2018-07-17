@@ -100,15 +100,20 @@ class AuthManager():
         expiretime = 0
         if self.authdata.get('time') is not None and self.authdata.get('expires_in') is not None:
             expiretime = self.authdata.get('time') + self.authdata.get('expires_in')
+            print("Expire time for token: "+str(expiretime))
         if self.authdata.get('refresh_token') is None:
             self.authdata = self.retrieve_refresh_token()
+        elif self.authdata.get('token_type') is None or self.authdata.get('access_token') is None:
+            self.authodata = self.retrieve_refresh_token()            
         elif expiretime < current_time: #access token is expired
             expiretime = self.authdata.get('time') + self.authdata.get('refresh_token_expires_in')
             if expiretime < current_time: # refresh token is expired
                 self.authdata = self.retrieve_refresh_token()
             else: 
                 self.authdata = self.retrieve_new_access_token(self.authdata)
-        
+        # check for token_type in authdata
+        if self.authdata.get('token_type') is None or self.authdata.get('access_token') is None:
+            self.authodata = self.retrieve_refresh_token()
         return self.authdata
 
     def current_time(self):
