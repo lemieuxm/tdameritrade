@@ -1,4 +1,8 @@
 # MLTDAmeritrade
+
+As of 20180725.... TDAmeritrade has refused to support Forex trading through the API.  I have moved all my money away from TDAmeritrade as a result.  I will no longer develop this librray. 
+
+
 Python library for accessing TDAmeritrade API's. 
 
 This is a work in progress.  I am currently working with the very helpful API support team at TDAmeritrade to get everything working.  The documentation for the API's are at https://developer.tdameritrade.com/.  This tool will only be useful to you if you have a TDAmeritrade account, which you can get at https://www.tdameritrade.com.  Pull requests are encouraged. 
