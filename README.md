@@ -28,6 +28,6 @@ This is a work in progress.  I am currently working with the very helpful API su
 * I am currently developing a private library that uses this library and does backtesting, trading, and data analysis.  As that matures, I may move some of those tools into this tool, if those things are desired (or move parts of the private library into a publicly available library).  I'm currently not planning to make my personal trading algorithm and methodology public, so parts of the private library will also remain private.  
 
 
-Please send questions to: (Matthew) mdl@mlemieux.com 
+Please send questions and pull requests to: (Matthew) mdl@mlemieux.com  (github: lemieuxm)
 
 
