@@ -9,6 +9,7 @@ This is a work in progress.  I am currently working with the very helpful API su
 
 ### Notes
 
+* Because of the way TDAmeritrade handles authentication, I have to start up a web server whenever the current token is no longer accepted (or doesn’t exist since it is the first time you’ve run the code).  That web server is only started when authentication is needed.  In order to get the authentication to happen, you need to load the page from the local web server that was started, which will send you to the tdameritrade site to do the log in, and then redirect back to the local web server, which intercepts the tokens needed for the API calls, and saves them to local fiels.  Then you won’t need to do that again until it expires.  
 * There is a webserver that will automatically startup as needed to authenticate with TDAmeritrade as needed.  That server needs to run SSL, and needs a certificate.  Place the certificate and key in the following file: `~/.mltrading/config/cert.pem`.   See https://developer.tdameritrade.com/content/authentication-sample-python-3 for an example of how to create a self-signed certificate. 
 * You will need to create the following file `~/.mltrading/config/td_app_config` with some configuration information (corresponding to your app and your confguration).  
 ```javascript
